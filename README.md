@@ -77,7 +77,7 @@ Node.js의 express apig는 `repository/core/server/apis` 위치에 존재한다.
 
 ##### 이메일 재전송
 
-*회원가입 후 **503**이 반환되어 이메일을 받지 못했다면 다음의 리소스를 통해 인증 이메일을 다시 요청할 수 있다. 해당 리소스는 반드시* **flag.isAutoVerifiedEmail***이* **true***일 경우에만 동작한다.*
+*회원가입 후* **503***이 반환되어 이메일을 받지 못했다면 다음의 리소스를 통해 인증 이메일을 다시 요청할 수 있다. 해당 리소스는 반드시* **flag.isAutoVerifiedEmail***이* **true***일 경우에만 동작한다.*
 
 `POST` `/api/accounts/sender-email`
 
