@@ -82,7 +82,7 @@ Node.js의 express apig는 `repository/core/server/apis` 위치에 존재한다.
 `POST` `/api/accounts/sender-email`
 
 * 파리미터 중 type은 반드시 **signUp**으로 해야한다.
-* 성공했다면 **204**로 응답한다. 만약 `NODE_ENV`가 `development`일 경우에만 **204**임에도 불구하고 토큰값이 바디로 전송된다.
+* 성공했다면 **204**로 응답한다. 만약 `NODE_ENV`가 `test`일 경우에만 **204**임에도 불구하고 토큰값이 바디로 전송된다.
 * 파라미터 확인은 성공했으나 이메일 발송이 실패했다면 **503**으로 응답한다.
 * flag.isAutoVerifiedEmail이 true일 경우나 이미 인증이 되어 있다면 **400**으로 응답한다.
 * 로그인이 되어 있지 않다면 **401**로 응답한다.
