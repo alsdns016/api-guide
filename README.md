@@ -1,143 +1,92 @@
-# API 가이드
-<!--![sg-core api](http://)-->
+# SG API 이용가이드
+
+slogup에서는 Express의 Wrapper Module인 SG-Core Framework를 보유하고 있다. 해당 프레임워크는 앞으로 `코어`라고 명명한다.
+
+코어에서 제공하는 핵심 API 기능은 다음과 같다.
+
+- 계정관련 APIs
+- 약관 관련 APIs
+- 문자, 이메일 전송관련 APIs
+- 노티피케이션 관련 APIs
+- 멀티미디어 관련 APIs
+- 신고/문의 관련 APIs
+- 공지사항 관련 APIs
+- 게시판 관련 APIs
+
+본 문서는 이중에서 기본적인 API 형태와 이용방법에 대해서 설명한다.
 
 
-## Overview
-**SG-Core API**는 기존 자주 이용하는 API 리소스의 집합이다. 특별한 말이 없는 한 모든 API의 접두어는 **sg**가 들어간다. 앞으로 API 리소스 집합을 API Group 즉 **apig**라 하겠다.
-해당 기능은 단순 api 형태이기 때문에 플랫폼에 종속적이지 않으며, 팀슬로그업 자체에서 해당 플랫폼을 각 프로토콜에 맞춰 개발해 놓고 레이어를 나눠 생산성을 높인다.
+## API 형태
 
-개발언어는 `Node.js`의 `Express framework`가 이용되고 있으며, RDBMS는 `Sequelize` ORM을 이용하고 표준 SQL문만 이용했기 때문에 DBMS에 종속적이지 않다. 
+코어 API의 형태는 RestFul서비스의 형태와 같으나 개발편의를 위한 예외사항이 몇 개가 있다. 기본적으로 4개의 Method를 사용하며 각 메소드는 `GET`, `POST`, `PUT`, `DELETE`가 있다. `GET`의 경우 복수와 단수 2가지로 나뉘며 보통 리소스명 끝이 복수형으로 끝나거나 단수로 끝나게 된다.
 
-테스트를 위해 모든 리소스는 <http://yourdomain.com/api/tester> 에서 수행이 가능하다. 이때 tester앞에 있는 api 접두어는 프로젝트마다 변경이 가능하다.
+예로 http://mydomain.com/api/accounts/users 라는 리소스가 있다면 CRUD의 형태는 다음과 같다.
+- GET http://mydomain.com/api/accounts/users : 유저 복수 반환
+- GET http://mydomain.com/api/accounts/users/id : 해당 id의 유저 반환
+- POST http://mydomain.com/api/accounts/users : 유저 생성 (회원가입)
+- PUT http://mydomain.com/api/accounts/users/id : 해당 id의 유저 수정 (정보수정)
+- DELETE http://mydomain.com/api/accounts/users/id : 해당 id의 유저 제거 (회원탈퇴)
 
-해당 문서는 플랫폼에 종속적이지 않은 클라이언트용 api 가이드이다. 추가적으로 [**프로젝트가이드라인**](http://naver.com) 문서와 각 플랫폼별 [**iOS가이드라인**](), [**Android가이드라인**](), [**Web가이드라인**]()이 있다. 또한 서버의 app단 개발을 위해 [**Server가이드라인**]()이 존재한다. 
+또한 해당 리소스는 `도메인명`/`api`/`리소스그룹명`/`리소스객체명`의 형태로 이루어져 있다. 
+(http://mydomain.com 도메인명을 해당 서비스의 도메인명으로 바꾸면 된다.)
 
+일반적으로는 다음과 같은 형태를 유지하지만 예외적인 경우가 있다.
 
-## 리소스 표기 형태
-주요 apig로는 **accounts, etc, socials** 등이 있으며, 특별한 명사가 아니라면 모두 **복수형**으로 표기된다. 또한 해당 apig는 최종 리소스이름 앞단에 존재한다. 
+예로 http://mydomain.com/api/accounts/session 이라는 리소스가 있다면 CRUD의 형태는 다음과같다.
+- GET http://mydomain.com/api/accounts/session : 세션 정보 반환 (유저 정보 반환)
+- POST http://mydomain.com/api/accounts/session : 세션 정보 생성 (로그인)
+- PUT http://mydomain.com/api/accounts/session : 세션 정보 갱신 후 반환 (유저 정보 갱신 후 반환)
+- DELETE http://mydomain.com/api/accounts/session : 세션 정보 제거 (로그아웃)
 
-예를 들면 accounts apig에 속해있는 users라는 리소스는 다음과 같은 리소스명을 형성한다. 
+세션리소스는 단수로 끝나게 되고, 세션의 여러정보반환 이라는 API는 제공하지 않게 된다. 또한 특이한 점은 session post가 로그인이라는 점이다.
 
-<http://yourdomain.com/api/accounts/users>
+해당 부분을 쉽게 생각하려면 다음과 같이 이해하면 된다. 세션이라는 리소스명을 갖고 있는 해당 API는 세션그룹에 무언가의 액션을 한다고 이해하면 쉽다.
+`GET`은 세션그룹 (세션모임)에서 현재 로그인된 유저의 정보를 가져오는 기능이며, `POST`의 경우 세션그룹에 현재 로그인한 정보를 담아 두어 정보를 유지시키는 기능이라고 보면된다.
+`PUT`의 경우 세션정보를 DB에서 find 해와서 redis와 같은 세션스토어에 갱신 후 반환한다. 마지막으로 `DELETE`의 경우 세션그룹에서 해당 세션을 지우는 기능이다.
 
-이때 users라는 리소스명은 리소스 단위 즉 **resource unit**, 혹은 단순히 **유닛**이라 하겠다.
+따라서 리소스명이 어떠한 그룹이라고 생각하고 그 그룹에서 특정 값을 생성하거나, 읽어오거나, 갱신하거나 제거하는 CRUD액션을 API리소스와 Method의 형태라고 보면 된다.
 
+## API 테스터 페이지
 
-## 구조
-Node.js의 express apig는 `repository/core/server/apis` 위치에 존재한다. 따라서 코드 수정 혹은 추가는 해당 폴더 아래에서 이루어 진다. 해당 경로를 보면 `core` 가 존재하는데, 이는 core 외 추가적으로 app단 고유의 api를 추가할 수 있다는 의미가 된다.
+코어 API는 기본적으로 API 테스트 페이지를 제공한다. url의 형태는 다음과 같다.
 
-크게 나누어 보면 `core`, `bridge`, `app`으로 이루어져 있다. 그중 현 문서에서 설명할 부분은 core에 해당하는 내용이다. app의 경우 core와 유사한 형태를 갖고 있으며, 이 두개의 api는 app이 더 높은 우선순위를 갖고 bridge에 의해서 mix된다. 즉 중복된 resource unit이 app과, core에 모두 존재한다면 app에 있는 resource unit이 작동하게 된다.
-
-리소스유닛 명은 대부분 일반 명사의 복수형 형태로 되어 있으며 복합명사로 이루어질 경우 하이픈(-)을 이용한다. 만약 리소스유닛이 복수형이 아니라면 모든 get요청은 단일 오브젝트를 반환한다는 의미이다. 복수형일 경우의 CRUD 예시는 다음과 같다.
-
-1. GET <http://yourdomain.com/api/accounts/users> 복수형 배열 반환.
-2. GET <http://yourdomain.com/api/accounts/users/:id:> 해당 아이디에 해당하는 단일 객체 반환.
-3. POST <http://yourdomain.com/api/accounts/users> 유저 생성.
-4. PUT <http://yourdomain.com/api/accounts/users/:id:> 해당 아이디에 해당하는 유저 수정.
-5. DELETE <http://yourdomain.com/api/accounts/users/:id:> 해당 아이디에 해당하는 유저 제거.
-
-단수형일 경우의 CRUD 예시는 다음과 같다.
-
-1. GET <http://yourdomain.com/api/socials/bbs> 게시판을 로드하기 위한 여러 데이터를 포함하는 객체 반환. 예를들면 현재 게시판의 Board값, Category, Article list 등.
-
+http://mydomain.com/api/tester 로 접근하면 테스트 페이지에 들어갈 수 있다. 슬로그업에서는 모든 응답형태를 통일하기 위해 `resform`이라는 방식을 도입했다.
+이는 특정 API응답의 관한 JSON형태를 통일 시키기 위함인데, 클라이언트 개발시 특정 object의 property를 이용할 때 에러율을 줄여줄 수 있다.
 
 
-## 활용 가이드
-### 공통사항
-모든 요청의 성공은 200이거나 204, 201등의 상태코드가 올 것이며, POST가 **생성**의 의미로 이용 된다면 **201**을 응답할 것이고, 성공 후 반환값이 없다면 **204**가 반환될 것이다. 그외 모두 **200**이 반환된다. 모든 요청의 실패는 **500**을 염두해 두고 실패 처리 코드를 작성해야 한다. apig앞의 prefix는 `api`를 쓰도록 하겠다. 즉 앞으로 모든 도메인의 형태는 <http://yourdomain.com/api/apig/unit> 형태가 되며 단순히 줄여서 `/api/apig/unit`의 형태를 이용하도록 하겠다. 해당 문서에 나와 있지 않은 간단한 요청에 관한 리소스는 `/api/tester`를 확인하도록 한다.
+## API 이용 방법
 
-### Accounts
-해당 apig는 유저계정관련 대부분의 요소를 제공한다. 특히 가입, 로그인, 정보수정 등의 주요 기능을 수행한다. 회원가입 즉 `Users` 유닛의 `post`메소드부터 차례대로 알아보도록 하겠다.
-먼저 회원가입은 크게 3가지 형태로 나뉜다. 
+API이용 방법은 일반적인 호출 방식과 비슷하다. 먼저 계정에 관한 API부터 살펴보도록 하자.
+계정 API는 리소스그룹명이 accounts로 시작하게 된다.
 
-1. 이메일 회원가입
-2. 전화번호 회원가입
-3. OAuth 회원가입
+### 회원가입
+회원가입은 email, phone, social, phoneId, normalId, phoneEmail 총 6개의 형태가 있다. email의 경우 이메일 회원가입을 의미하며, phone의 경우 핸드폰번호로 가입하는 것을 의미한다. social의 경우 각 provider를 이용하여 소셜 가입을 하는 것을 의미하며, normalId의 경우 기본 아이디, 비밀번호 가입을 의미한다. phoneId의 경우 핸드폰가입이나 아이디가 따로 존재하는 것을 의미한다. 마지막으로 phoneEmail의 경우 휴대폰가입이면서 이메일 아이디를 이용해 가입하는 것을 의미한다.
 
-먼저 이메일 회원가입부터 알아보자.
+회원가입시 필요한 리소스 목록은 다음과 같다.
+- http://mydomain.com/api/accounts/sender-phone
+- http://mydomain.com/api/accounts/sender-email
+- http://mydomain.com/api/accounts/auth-phone
+- http://mydomain.com/api/accounts/auth-email
+- http://mydomain.com/api/accounts/users
 
-#### 이메일 회원가입
-이메일 회원가입은 인증관련 두가지 옵션이 있다. 즉 회원가입시 이메일인증이 필요한 경우와 그렇지 않은 경우이다. 인증의 필요 유무는 `repository/app/server/metadata/standards.js` 파일의 `flag.isAutoVerifiedEmail` 플래그를 토글하여 조절할 수 있다. 앞으로 각 리소스의 파라미터는 `/api/tester`를 확인하도록 한다.
+#### 이메일가입
+이메일 가입은 말그대로 이메일이 아이디가 되어 가입하는 형태를 의미하는데, 이때 두가지 옵션이 있다. 하나는 이메일 바로 인증이며, 또 하나는 이메일로 특정 해쉬값을 전송하여 재인증 받는 방식이다.
 
-클라이언트는 최초 `/api/accounts/users`의 `POST`를 요청한다. 그러면 가입했던 이메일로 토큰과 함께 인증요청 메일이 발송된다. 해당 인증 URL은 반드시 **로그인 되어 있는 상태**에서 클릭해야 한다. URL은 `/api/accounts/auth-email?token=tokenvalue` 형태이다. 만약 로그인되어 있지 않다면 해당 URL링크는 **401 상태코드**를 응답할 것이다. 반대로 로그인이 되어 있는 상태라면 정상적으로 인증 될 것이고 **200 상태코드**와 함께 PC의 경우 루트URL로 리다이렉트 될 것이고 모바일앱 경우 인증완료 화면이 나타나고 앱으로 돌아갈 것이다. 즉 `auth-email` 유닛을 이용하여 로그인 유무와 정상적인 토큰 값인지 검사한다.
+1. POST http://mydomain.com/api/accounts/users
+- type : [email]
+- uid : email id값
+- secret : 비밀번호
 
-##### 회원가입을 할 경우의 순서
+#### 핸드폰가입
+핸드폰가입은 번호 인증을 먼저 받아야 한다. 이후 user post를 이용해서 인증번호와 함께 가입이 가능하다.
 
-`POST` `/api/accounts/users`
-
-* 성공했다면 이메일로 /api/accounts/auth-email?token=tokenvalue 요청이 보내진 후 **201** 응답코드가 반환 될 것이다.
-  * 해당 링크를 클릭하여 이메일 인증에 성공했다면 **200**상태코드가 반환되고 서비스 루트로 리다이렉트 된다.
-  * 인증에 실패했다면 아래 이유 중 하나이며, 실패화면으로 리다이렉트 되고 로그아웃된다.
-    * **404**: 해당 토큰이 존재하지 않음.
-    * **400**: 이미 인증되었음.
-    * **403**: 만기되었거나 잘못된 인증정보.
-* 가입이 완료되고 이메일 발송이 실패될 경우 **503** (Service Unavaliable)이 발송된다. 이럴경우 서버관리자에게 알림이 가도록 서버 core단에서 구현한다. 이때 유저데이터는 이미 삽입된 상태이다.
-* 가입이 완료되지 않았다면 이메일도 발송되지 않는다. (이메일 발송은 서버에서 유저삽입 트렌젝션이 완료된 후 수행된다.) 이때는 보통 서버에러 **500** 이거나, **409** 에러이다.
-
-
-##### 이메일 재전송
-
-*회원가입 후* **503***이 반환되어 이메일을 받지 못했다면 다음의 리소스를 통해 인증 이메일을 다시 요청할 수 있다. 해당 리소스는 반드시* **flag.isAutoVerifiedEmail***이* **true***일 경우에만 동작한다.*
-
-`POST` `/api/accounts/sender-email`
-
-* 파리미터 중 type은 반드시 **signUp**으로 해야한다.
-* 성공했다면 **204**로 응답한다. 만약 `NODE_ENV`가 `test`일 경우에만 **204**임에도 불구하고 토큰값이 바디로 전송된다.
-* 파라미터 확인은 성공했으나 이메일 발송이 실패했다면 **503**으로 응답한다.
-* flag.isAutoVerifiedEmail이 true일 경우나 이미 인증이 되어 있다면 **400**으로 응답한다.
-* 로그인이 되어 있지 않다면 **401**로 응답한다.
-
-#### 전화번호 회원가입
-
-전화번호 회원가입은 이메일 회원가입과 순서가 조금 다르다. 전화번호 가입의 경우는 가입 전에 먼저 인증번호를 문자로 보내고 확인하는 형태이기 때문에 가입 후 이메일 인증을 보내는 것과 차이를 보인다.
-
-##### 회원가입을 할 경우의 순서
-
-*먼저 인증번호를 전송한다.*
-
-`POST` `/api/accounts/sender-phone`
-
-* type 파라미터의 경우 반드시 **signUP**으로 해야한다.
-* 성공했다면 204가 반환된다. 만약 `NODE_ENV`가 `development`일 경우에만 **204**임에도 불구하고 인증번호가 바디로 전송된다.
-* 잘못된 번호일 경우 400으로 응답한다.
-* 이미 번화번호가 존재하는 경우 409로 응답한다.
-
-*이후에 해당 인증번호로 가입을 시도한다.*
-
-`POST` `/api/accounts/users`
-
-* secret 파라미터에 인증번호가 들어간다.
-* 성공했다면 201과 함께 세션 정보가 바디에 실려 반환될 것이다.
-* 잘못된 인증번호일 경우 403으로 응답한다.
-* 인증중인 번호가 없다면 404로 응답한다.
-
-#### OAuth 회원가입
-
-OAuth회원가입은 페이스북, 트위터 등과 같이 타 서비스의 계정을 이용하여 인증 후 가입하는 방법이다. 현재 코어에서 지원하는 벤더는 페이스북, 트위터, 구글+가 있다. (계속 업데이트 예정)
-
-#### 회원가입 공통
-
-가입시 필요한 공통 요청에 대한 설명이다.
-
-##### 가입시에 중복검사
-
-*닉네임, 폰번호, 이메일의 중복검사가 가능하다.*
-
-`GET` `/api/accounts/unique`
-
-* 성공했다면, 즉 중복된 값이 없다면 204로 응답한다.
-* 실패했다면, 즉 중복된 값이 있다면 409로 응답한다.
-
-#### 로그인
-#### 비밀번호찾기
-#### 계정연동
-  
- 
- 
-	
-
-
-
+1. POST http://mydomain.com/api/accounts/sender-phone
+- phoneNum  : 인증받을 전화번호, 반드시 +와 국가코드를 붙이고 하이픈(-)은 뺀형태여야 한다. 예) +821012341234
+- type  : [phoneSignup]
+2. POST http://mydomain.com/api/accounts/users
+- type : [phone]
+- uid : 인증받은 전화번호
+- secret : 1번에서 받은 인증번호
 
 
 
